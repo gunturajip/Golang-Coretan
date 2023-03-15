@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"golang-coretan/helpers"
+	"math"
 	"reflect"
 	"strings"
 )
@@ -291,10 +292,46 @@ outerLoop:
 	// chapter 22 - export package
 	fmt.Println("Export dari iniMethod:", helpers.IniMethod("guntur"))
 
-	var str = "САШАРВО"
-	for pos, char := range str {
-		fmt.Printf("%U %c %d\n", char, char, pos)
+	// chapter 23 - interface
+	var c1 shape = circle{radius: 5}
+	var r1 shape = rectangle{width: 3, height: 5}
+	fmt.Printf("Type of c1: %T", c1)
+	fmt.Println("Circle area:", c1.area())
+	fmt.Println("Circle perimeter:", c1.perimeter())
+	fmt.Println("Circle volume:", c1.(circle).volume())
+	fmt.Printf("Type of r1: %T", r1)
+	fmt.Println("Rectangle area:", r1.area())
+	fmt.Println("Rectangle perimeter:", r1.perimeter())
+
+	// chapter 24 - empty interface
+	var randomValue interface{}
+	_ = randomValue
+	randomValue = "Jalan Sudirman"
+	randomValue = 20
+	if value, ok := randomValue.(int); ok {
+		randomValue = value * 2
 	}
+	randomValue = true
+	randomValue = []string{"Airell", "Nanda"}
+	// var randomSlice []interface{}
+	// randomSlice = append(randomSlice, "halo")
+	// randomSlice = append(randomSlice, 4)
+
+	// challenge buat looping tek kotek
+	first_str := "kotek kotek kotek\nAnak ayam turun berkotek\nTek kotek kotek kotek\nAnak ayam turun berkotek\n\n"
+
+	last_str := "Anak ayam turunlah 1\nPergi 1 tinggal indukya"
+
+	input := 22
+
+	for i := input; i > 1; i-- {
+		str := fmt.Sprintf("Anak ayam turunlah %d\nPergi 1 tinggallah %d\n\n", i, i-1)
+		first_str += str
+	}
+
+	first_str += last_str
+
+	fmt.Printf("%s", first_str)
 }
 
 func greet(name, address string, age, weight int, list ...string) string {
@@ -333,4 +370,37 @@ func (p *Person) reviseName(name string) {
 type Employee struct {
 	division string
 	person   Person
+}
+
+type shape interface {
+	area() float64
+	perimeter() float64
+}
+
+type rectangle struct {
+	width, height float64
+}
+
+type circle struct {
+	radius float64
+}
+
+func (r rectangle) area() float64 {
+	return r.height * r.width
+}
+
+func (c circle) area() float64 {
+	return math.Pi * math.Pow(c.radius, 2)
+}
+
+func (c circle) volume() float64 {
+	return 4 / 3 * math.Pi * math.Pow(c.radius, 3)
+}
+
+func (c circle) perimeter() float64 {
+	return 2 * math.Pi * c.radius
+}
+
+func (r rectangle) perimeter() float64 {
+	return 2 * (r.height + r.width)
 }
