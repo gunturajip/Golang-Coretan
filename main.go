@@ -5,7 +5,10 @@ import (
 	"golang-coretan/helpers"
 	"math"
 	"reflect"
+	"runtime"
 	"strings"
+	"sync"
+	"time"
 )
 
 const (
@@ -331,7 +334,75 @@ outerLoop:
 
 	first_str += last_str
 
-	fmt.Printf("%s", first_str)
+	fmt.Printf("%s\n", first_str)
+
+	// concurrency & goroutine
+	fmt.Println("main execution started")
+	go firstProcess(100)
+	go secondProcess(100)
+	fmt.Println("No. of Goroutines:", runtime.NumGoroutine())
+	time.Sleep(100 * time.Millisecond)
+	fmt.Println("main execution ended")
+
+	// goroutine sync - waitgroup
+	fruits := []string{"apple", "manggo", "durian", "rambutan"}
+	var wg sync.WaitGroup
+	var mutex sync.Mutex
+	for index, fruit := range fruits {
+		wg.Add(1)
+		go printFruit(index, fruit, &wg, &mutex)
+	}
+	wg.Wait()
+
+	// channels
+	c := make(chan string)
+	students := []string{"Airell", "Nanda", "Mailo"}
+	for _, student := range students {
+		go introduce(student, c)
+		cResult := <-c
+		go greeting(cResult, c)
+		fmt.Println(<-c)
+	}
+	close(c)
+
+	// unbuffered channel
+	c2 := make(chan int, 3)
+	go func(c2 chan int) {
+		for i := 1; i <= 5; i++ {
+			fmt.Printf("func goroutine #%d starts sending data into the channel\n", i)
+			c2 <- i
+			fmt.Printf("func goroutine #%d after sending data into the channel\n", i)
+		}
+		close(c2)
+	}(c2)
+
+	fmt.Println("main goroutine sleeps for 2 seconds")
+	time.Sleep(2 * time.Second)
+
+	for v := range c2 { // v = <- c2
+		fmt.Println("main goroutine received data:", v)
+	}
+
+	// channel select
+	c3 := make(chan string)
+	c4 := make(chan string)
+	go func() {
+		time.Sleep(2 * time.Second)
+		c3 <- "Hello!"
+	}()
+	go func() {
+		time.Sleep(1 * time.Second)
+		c4 <- "Salut!"
+	}()
+
+	for i := 1; i <= 2; i++ {
+		select {
+		case msg1 := <-c3:
+			fmt.Println("Received", msg1)
+		case msg2 := <-c4:
+			fmt.Println("Received", msg2)
+		}
+	}
 }
 
 func greet(name, address string, age, weight int, list ...string) string {
@@ -403,4 +474,38 @@ func (c circle) perimeter() float64 {
 
 func (r rectangle) perimeter() float64 {
 	return 2 * (r.height + r.width)
+}
+
+func firstProcess(index int) {
+	fmt.Println("First process func started")
+	for i := 1; i <= index; i++ {
+		fmt.Println("i=", i)
+	}
+	fmt.Println("First process func ended")
+}
+
+func secondProcess(index int) {
+	fmt.Println("Second process started")
+	for j := 1; j <= index; j++ {
+		fmt.Println("j=", j)
+	}
+	fmt.Println("Second process ended")
+}
+
+func printFruit(index int, fruit string, wg *sync.WaitGroup, mutex *sync.Mutex) {
+	mutex.Lock()
+	fmt.Printf("index => %d, fruit => %s\n", index, fruit)
+	fmt.Printf("index => %d, fruit => %s\n", index, fruit)
+	mutex.Unlock()
+	wg.Done()
+}
+
+func introduce(student string, c chan<- string) {
+	result := fmt.Sprintf("Hai, nama saya %s", student)
+	c <- result
+}
+
+func greeting(cResult string, c chan string) {
+	greeting := fmt.Sprintf("%s Happy Weekend", cResult)
+	c <- greeting
 }
